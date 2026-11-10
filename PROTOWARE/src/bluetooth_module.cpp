@@ -317,6 +317,7 @@ static bool performBleScan() {
 
 static void renderBleScanList(int selected) {
     display.clearDisplay();
+    display.setTextWrap(false);
     display.setTextColor(SH110X_WHITE);
     display.setTextSize(1);
 
@@ -324,16 +325,16 @@ static void renderBleScanList(int selected) {
     display.fillRect(0, 0, 128, 11, SH110X_WHITE);
     display.setTextColor(SH110X_BLACK);
     display.setCursor(2, 2);
-    display.print("BLE Scan Results (");
-    display.print(totalBleScanned);
-    display.print(")");
+    display.print("BLE Scan");
+    display.setCursor(96, 2);
+    display.printf("(%d)", totalBleScanned);
 
     if (totalBleScanned == 0) {
         display.setTextColor(SH110X_WHITE);
         display.setCursor(14, 28);
-        display.print("No BLE devices found");
+        display.print("No BLE devices");
         display.setCursor(14, 44);
-        display.print("< Back to return");
+        display.print("< Back");
         display.display();
         return;
     }
@@ -355,14 +356,14 @@ static void renderBleScanList(int selected) {
         }
 
         String displayName = bleScanList[i].name;
-        if (displayName.length() > 12) {
-            displayName = displayName.substring(0, 11) + "..";
+        if (displayName.length() > 11) {
+            displayName = displayName.substring(0, 10) + "..";
         }
         display.setCursor(4, y + 1);
         display.print(displayName);
 
         // RSSI
-        display.setCursor(96, y + 1);
+        display.setCursor(90, y + 1);
         display.print(bleScanList[i].rssi);
         display.print("dB");
 
@@ -376,6 +377,7 @@ static void renderBleDetails(int idx) {
     if (idx < 0 || idx >= totalBleScanned) return;
 
     display.clearDisplay();
+    display.setTextWrap(false);
     display.setTextColor(SH110X_WHITE);
     display.setTextSize(1);
 
@@ -383,37 +385,35 @@ static void renderBleDetails(int idx) {
     display.fillRect(0, 0, 128, 11, SH110X_WHITE);
     display.setTextColor(SH110X_BLACK);
     display.setCursor(2, 2);
-    display.print("BLE Device Details");
+    display.print("BLE Details");
 
     display.setTextColor(SH110X_WHITE);
-    display.setCursor(2, 14);
+    display.setCursor(2, 13);
     display.print("Name: ");
     String s = bleScanList[idx].name;
     if (s.length() > 14) s = s.substring(0, 13) + "..";
     display.print(s);
 
-    display.setCursor(2, 26);
-    display.print("MAC:  ");
-    display.print(bleScanList[idx].address);
+    display.setCursor(2, 23);
+    display.printf("M: %s", bleScanList[idx].address.c_str());
 
-    display.setCursor(2, 38);
-    display.print("RSSI: ");
-    display.print(bleScanList[idx].rssi);
-    display.print(" dBm  (");
+    display.setCursor(2, 33);
     int pct = constrain(2 * (bleScanList[idx].rssi + 100), 0, 100);
-    display.print(pct);
-    display.print("%)");
+    display.printf("Sig : %d dBm (%d%%)", bleScanList[idx].rssi, pct);
 
-    display.setCursor(2, 50);
+    display.setCursor(2, 44);
     display.print("Type: ");
     display.print(bleScanList[idx].addrType);
 
     // Signal bar
     int barW = map(pct, 0, 100, 0, 36);
-    display.drawRect(88, 50, 38, 9, SH110X_WHITE);
+    display.drawRect(88, 44, 38, 8, SH110X_WHITE);
     if (barW > 0) {
-        display.fillRect(89, 51, barW, 7, SH110X_WHITE);
+        display.fillRect(89, 45, barW, 6, SH110X_WHITE);
     }
+
+    display.setCursor(2, 54);
+    display.print("< Back");
 
     display.display();
 }
@@ -426,6 +426,7 @@ static unsigned long lastMouseMoveTick = 0;
 
 static void renderBleMouseScreen() {
     display.clearDisplay();
+    display.setTextWrap(false);
     display.setTextColor(SH110X_WHITE);
     display.setTextSize(1);
 
@@ -603,6 +604,7 @@ static const SpecialKey specKeysRow2[] = {
 
 static void renderBleKeyboardScreen() {
     display.clearDisplay();
+    display.setTextWrap(false);
     display.setTextColor(SH110X_WHITE);
     display.setTextSize(1);
 
@@ -861,6 +863,7 @@ static void scanSdForScripts() {
 
 static void renderHidScriptList(int selected) {
     display.clearDisplay();
+    display.setTextWrap(false);
     display.setTextColor(SH110X_WHITE);
     display.setTextSize(1);
 
@@ -884,14 +887,12 @@ static void renderHidScriptList(int selected) {
 
     if (totalHidScripts == 0) {
         display.setTextColor(SH110X_WHITE);
-        display.setCursor(8, 20);
-        display.print("No .txt scripts found");
-        display.setCursor(8, 32);
-        display.print("Insert SD with scripts");
-        display.setCursor(8, 44);
-        display.print("in /scripts folder");
-        display.setCursor(8, 54);
-        display.print("< Back to return");
+        display.setCursor(6, 22);
+        display.print("No scripts found");
+        display.setCursor(6, 36);
+        display.print("Put .txt into /scripts");
+        display.setCursor(6, 52);
+        display.print("< Back");
         display.display();
         return;
     }
@@ -985,6 +986,7 @@ static void sendDuckyString(const String& s) {
 
 static void renderDuckyProgressScreen(const String& filename, int progressPct, const String& lastCmd) {
     display.clearDisplay();
+    display.setTextWrap(false);
     display.setTextColor(SH110X_WHITE);
     display.setTextSize(1);
 
@@ -992,21 +994,21 @@ static void renderDuckyProgressScreen(const String& filename, int progressPct, c
     display.fillRect(0, 0, 128, 11, SH110X_WHITE);
     display.setTextColor(SH110X_BLACK);
     display.setCursor(2, 2);
-    display.print("Executing Script");
+    display.print("HID Running");
 
     display.setTextColor(SH110X_WHITE);
     display.setCursor(2, 14);
     String fname = filename;
     int slash = fname.lastIndexOf('/');
     if (slash >= 0) fname = fname.substring(slash + 1);
-    if (fname.length() > 18) fname = fname.substring(0, 17) + "..";
+    if (fname.length() > 16) fname = fname.substring(0, 15) + "..";
     display.print(fname);
 
     // Progress bar
-    display.drawRect(8, 27, 112, 11, SH110X_WHITE);
+    display.drawRect(8, 27, 112, 10, SH110X_WHITE);
     int fillW = map(progressPct, 0, 100, 0, 108);
     if (fillW > 0) {
-        display.fillRect(10, 29, fillW, 7, SH110X_WHITE);
+        display.fillRect(10, 29, fillW, 6, SH110X_WHITE);
     }
     display.setCursor(54, 40);
     display.print(progressPct);
@@ -1014,7 +1016,7 @@ static void renderDuckyProgressScreen(const String& filename, int progressPct, c
 
     display.setCursor(2, 52);
     String cmd = lastCmd;
-    if (cmd.length() > 20) cmd = cmd.substring(0, 19) + "..";
+    if (cmd.length() > 18) cmd = cmd.substring(0, 17) + "..";
     display.print(cmd);
 
     display.display();

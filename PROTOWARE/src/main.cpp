@@ -19,6 +19,7 @@
 #include "settings.h"
 #include "wifi_module.h"
 #include "bluetooth_module.h"
+#include "firmware_module.h"
 
 // =============================================================================
 // GLOBAL INTERFACE DEFINITIONS
@@ -138,7 +139,7 @@ void displayCurrentSubmenu(int previousIndex) {
         case 4: displayGPIOMenu(display, gpioMenuIndex, previousIndex); break;
         case 5: displayGamesMenu(display, gamesMenuIndex, previousIndex); break;
         case 6: enterSettingsSubmenu(); break;
-        case 7: displayFirmwareMenu(display, firmwareMenuIndex, previousIndex); break;
+        case 7: enterFirmwareSubmenu(); break;
     }
 }
 
@@ -170,6 +171,10 @@ void handleSubmenuNavigation() {
     }
     if (currentMenu == 6) {
         handleSettingsMenu();
+        return;
+    }
+    if (currentMenu == 7) {
+        handleFirmwareMenu();
         return;
     }
 
@@ -248,12 +253,14 @@ void setup() {
     display.begin(SSD1306_SWITCHCAPVCC, OLED_ADR);
 #endif
     display.clearDisplay();
+    display.setTextWrap(false);
     display.display();
 
     // 2. Load Saved Preferences & Settings
     initSettings();
     initWiFiModule();
     initBluetoothModule();
+    initFirmwareModule();
 
     // 3. Button configuration
     buttonUp.setDebounce(50);

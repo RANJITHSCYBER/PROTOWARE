@@ -29,12 +29,21 @@
 #endif
 
 inline void drawCenteredMenuLabel(DisplayType &display, const char *text, uint8_t textSize, int16_t y) {
+  if (!text) return;
   int16_t x1, y1;
   uint16_t w, h;
 
+  // If size 2 exceeds safe width between side arrows (112 px max),
+  // drop to size 1 so text never clips or collides with arrows
+  if (textSize > 1 && strlen(text) > 9) {
+    textSize = 1;
+    if (y == 25) y = 28;
+  }
+
   display.setTextSize(textSize);
   display.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
-  display.setCursor((SCREEN_WIDTH - w) / 2, y);
+  int16_t curX = (w < SCREEN_WIDTH) ? static_cast<int16_t>((SCREEN_WIDTH - w) / 2) : 2;
+  display.setCursor(curX, y);
   display.print(text);
 }
 

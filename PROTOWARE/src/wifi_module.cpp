@@ -233,6 +233,7 @@ static bool performWiFiScan() {
 // =============================================================================
 static void renderScannedList(int selected, bool forConnect = false) {
     display.clearDisplay();
+    display.setTextWrap(false);
     display.setTextColor(SH110X_WHITE);
     display.setTextSize(1);
 
@@ -240,9 +241,9 @@ static void renderScannedList(int selected, bool forConnect = false) {
     display.fillRect(0, 0, 128, 12, SH110X_WHITE);
     display.setTextColor(SH110X_BLACK);
     display.setCursor(2, 2);
-    display.print(forConnect ? "Select WiFi to Connect" : "Scanned Networks");
+    display.print(forConnect ? "Connect WiFi" : "WiFi Scan");
 
-    display.setCursor(102, 2);
+    display.setCursor(96, 2);
     display.printf("%d/%d", selected + 1, totalScanned);
 
     if (totalScanned == 0) {
@@ -250,7 +251,7 @@ static void renderScannedList(int selected, bool forConnect = false) {
         display.setCursor(14, 28);
         display.print("No WiFi Found!");
         display.setCursor(14, 44);
-        display.print("< Back to Menu");
+        display.print("< Back");
         display.display();
         return;
     }
@@ -274,18 +275,18 @@ static void renderScannedList(int selected, bool forConnect = false) {
             display.setTextColor(SH110X_WHITE);
         }
 
-        // SSID (up to 14 chars)
+        // SSID (up to 11 chars)
         String s = scannedNetworks[itemIdx].ssid;
-        if (s.length() > 14) s = s.substring(0, 13) + ".";
+        if (s.length() > 11) s = s.substring(0, 10) + ".";
         display.setCursor(4, y + 2);
         display.print(s);
 
         // RSSI & Lock icon
-        display.setCursor(92, y + 2);
+        display.setCursor(86, y + 2);
         display.printf("%ddB", scannedNetworks[itemIdx].rssi);
         if (scannedNetworks[itemIdx].auth != WIFI_AUTH_OPEN) {
-            display.drawPixel(124, y + 3, isSel ? SH110X_BLACK : SH110X_WHITE);
-            display.drawPixel(124, y + 5, isSel ? SH110X_BLACK : SH110X_WHITE);
+            display.drawPixel(122, y + 3, isSel ? SH110X_BLACK : SH110X_WHITE);
+            display.drawPixel(122, y + 5, isSel ? SH110X_BLACK : SH110X_WHITE);
         }
     }
 
@@ -297,6 +298,7 @@ static void renderScanDetails(int idx) {
     ScannedNetwork &net = scannedNetworks[idx];
 
     display.clearDisplay();
+    display.setTextWrap(false);
     display.setTextColor(SH110X_WHITE);
     display.setTextSize(1);
 
@@ -304,7 +306,7 @@ static void renderScanDetails(int idx) {
     display.fillRect(0, 0, 128, 11, SH110X_WHITE);
     display.setTextColor(SH110X_BLACK);
     display.setCursor(2, 2);
-    display.print("Network Info");
+    display.print("WiFi Details");
 
     display.setTextColor(SH110X_WHITE);
 
@@ -312,7 +314,7 @@ static void renderScanDetails(int idx) {
     display.setCursor(2, 13);
     display.print("SSID: ");
     String s = net.ssid;
-    if (s.length() > 15) s = s.substring(0, 14) + "..";
+    if (s.length() > 14) s = s.substring(0, 13) + "..";
     display.print(s);
 
     // Signal strength & bar
@@ -320,21 +322,21 @@ static void renderScanDetails(int idx) {
     int quality = 2 * (net.rssi + 100);
     if (quality < 0) quality = 0;
     if (quality > 100) quality = 100;
-    display.printf("RSSI: %d dBm (%d%%)", net.rssi, quality);
+    display.printf("Sig : %d dBm (%d%%)", net.rssi, quality);
 
     // Auth
     display.setCursor(2, 33);
-    display.printf("Auth: %s", getAuthTypeName(net.auth));
+    display.printf("Sec : %s", getAuthTypeName(net.auth));
 
     // MAC
     display.setCursor(2, 43);
-    display.printf("MAC : %02X:%02X:%02X:%02X:%02X:%02X",
+    display.printf("M: %02X:%02X:%02X:%02X:%02X:%02X",
         net.bssid[0], net.bssid[1], net.bssid[2],
         net.bssid[3], net.bssid[4], net.bssid[5]);
 
     // Channel & Back hint
     display.setCursor(2, 53);
-    display.printf("CH  : %d   < Back", net.channel);
+    display.printf("CH: %d         < Back", net.channel);
 
     display.display();
 }
@@ -354,6 +356,7 @@ static const char* const kbSym3 = "~`#%^&*() ";
 
 static void renderVirtualKeyboard() {
     display.clearDisplay();
+    display.setTextWrap(false);
     display.setTextColor(SH110X_WHITE);
     display.setTextSize(1);
 
@@ -473,6 +476,7 @@ static void handleKeyboardClick() {
 // =============================================================================
 static void renderLogsList(int selected) {
     display.clearDisplay();
+    display.setTextWrap(false);
     display.setTextColor(SH110X_WHITE);
     display.setTextSize(1);
 
@@ -480,17 +484,17 @@ static void renderLogsList(int selected) {
     display.fillRect(0, 0, 128, 12, SH110X_WHITE);
     display.setTextColor(SH110X_BLACK);
     display.setCursor(2, 2);
-    display.print("Saved WiFi Networks");
-    display.setCursor(102, 2);
+    display.print("Saved WiFi");
+    display.setCursor(96, 2);
     display.printf("%d/%d", totalSaved > 0 ? selected + 1 : 0, totalSaved);
 
     if (totalSaved == 0) {
         display.setTextColor(SH110X_WHITE);
-        display.setCursor(12, 24);
-        display.print("No Saved Networks!");
-        display.setCursor(12, 38);
-        display.print("Use 'WiFi Connect'");
-        display.setCursor(12, 50);
+        display.setCursor(10, 24);
+        display.print("No Saved Networks");
+        display.setCursor(10, 38);
+        display.print("Use 'Connect' first");
+        display.setCursor(10, 52);
         display.print("< Back");
         display.display();
         return;
@@ -514,8 +518,8 @@ static void renderLogsList(int selected) {
             display.setTextColor(SH110X_WHITE);
         }
 
-        String s = String(itemIdx + 1) + ". " + savedNetworks[itemIdx].ssid;
-        if (s.length() > 19) s = s.substring(0, 18) + ".";
+        String s = String(itemIdx + 1) + "." + savedNetworks[itemIdx].ssid;
+        if (s.length() > 16) s = s.substring(0, 15) + ".";
         display.setCursor(4, y + 2);
         display.print(s);
     }
@@ -526,6 +530,7 @@ static void renderLogsDetails(int idx) {
     if (idx < 0 || idx >= totalSaved) return;
 
     display.clearDisplay();
+    display.setTextWrap(false);
     display.setTextColor(SH110X_WHITE);
     display.setTextSize(1);
 
@@ -533,52 +538,57 @@ static void renderLogsDetails(int idx) {
     display.fillRect(0, 0, 128, 11, SH110X_WHITE);
     display.setTextColor(SH110X_BLACK);
     display.setCursor(2, 2);
-    display.print("WiFi Credentials");
+    display.print("Saved WiFi Info");
 
     display.setTextColor(SH110X_WHITE);
-    display.setCursor(4, 15);
+    display.setCursor(2, 14);
     display.print("SSID: ");
     String s = savedNetworks[idx].ssid;
     if (s.length() > 14) s = s.substring(0, 13) + "..";
     display.print(s);
 
-    display.setCursor(4, 27);
+    display.setCursor(2, 26);
     display.print("Pass: ");
     String p = savedNetworks[idx].pass;
-    if (p.length() == 0) p = "<Open/None>";
+    if (p.length() == 0) p = "<Open>";
     if (p.length() > 14) p = p.substring(0, 13) + "..";
     display.print(p);
 
     // Actions buttons at bottom: [Connect]  [Delete]
-    int yBtn = 46;
+    int yBtn = 42;
 
     // Connect Button
     if (logsDetailActionIdx == 0) {
-        display.fillRect(6, yBtn, 54, 14, SH110X_WHITE);
+        display.fillRect(4, yBtn, 56, 12, SH110X_WHITE);
         display.setTextColor(SH110X_BLACK);
     } else {
-        display.drawRoundRect(6, yBtn, 54, 14, 2, SH110X_WHITE);
+        display.drawRoundRect(4, yBtn, 56, 12, 2, SH110X_WHITE);
         display.setTextColor(SH110X_WHITE);
     }
-    display.setCursor(10, yBtn + 3);
+    display.setCursor(10, yBtn + 2);
     display.print("Connect");
 
     // Delete Button
     if (logsDetailActionIdx == 1) {
-        display.fillRect(68, yBtn, 54, 14, SH110X_WHITE);
+        display.fillRect(66, yBtn, 56, 12, SH110X_WHITE);
         display.setTextColor(SH110X_BLACK);
     } else {
-        display.drawRoundRect(68, yBtn, 54, 14, 2, SH110X_WHITE);
+        display.drawRoundRect(66, yBtn, 56, 12, 2, SH110X_WHITE);
         display.setTextColor(SH110X_WHITE);
     }
-    display.setCursor(76, yBtn + 3);
+    display.setCursor(76, yBtn + 2);
     display.print("Delete");
+
+    display.setTextColor(SH110X_WHITE);
+    display.setCursor(2, 56);
+    display.print("< Back");
 
     display.display();
 }
 
 static void renderComputerStyleDeleteModal() {
     display.clearDisplay();
+    display.setTextWrap(false);
 
     // Backdrop shadow box
     display.drawRoundRect(10, 8, 108, 48, 4, SH110X_WHITE);
@@ -787,6 +797,7 @@ static void startOTAPortal() {
 
 static void renderOTAPortalScreen() {
     display.clearDisplay();
+    display.setTextWrap(false);
     display.setTextColor(SH110X_WHITE);
     display.setTextSize(1);
 
@@ -794,7 +805,7 @@ static void renderOTAPortalScreen() {
     display.fillRect(0, 0, 128, 11, SH110X_WHITE);
     display.setTextColor(SH110X_BLACK);
     display.setCursor(4, 2);
-    display.print("OTA SD WEB PORTAL");
+    display.print("OTA Web Portal");
 
     display.setTextColor(SH110X_WHITE);
 
@@ -806,15 +817,15 @@ static void renderOTAPortalScreen() {
 
     display.setCursor(2, 36);
     int clients = WiFi.softAPgetStationNum();
-    display.printf("Clients: %d connected", clients);
+    display.printf("Clients: %d active", clients);
 
     display.setCursor(2, 46);
     String msg = otaLastUploadMsg;
-    if (msg.length() > 20) msg = msg.substring(0, 19) + ".";
+    if (msg.length() > 19) msg = msg.substring(0, 18) + ".";
     display.print(msg);
 
     display.setCursor(2, 56);
-    display.print("< Back to Stop & Exit");
+    display.print("< Back to Exit");
 
     display.display();
 }
