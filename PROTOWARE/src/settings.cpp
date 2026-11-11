@@ -1,6 +1,7 @@
 #include "settings.h"
 #include <Preferences.h>
 #include <GyverButton.h>
+#include <SD.h>
 
 #include "CONFIG.h"
 #include "pindefs.h"
@@ -19,11 +20,13 @@ extern byte submenu;
 extern bool inMenu;
 extern byte currentMenu;
 extern byte settingsMenuIndex;
+extern bool sdCardReady;
 extern void displayCurrentSubmenu(int previousIndex = -1);
 
 enum SettingsState : byte {
     SETTING_STATE_ROOT = 0,
     SETTING_STATE_INTERFACE,
+    SETTING_STATE_SYS_INFO,
     SETTING_STATE_MENU_STYLE,
     SETTING_STATE_SUBMENU_STYLE,
     SETTING_STATE_COLOR,
@@ -149,10 +152,64 @@ void checkStandbyTimeout() {
     }
 }
 
+static void renderSystemInfoScreen() {
+    display.clearDisplay();
+    display.setTextWrap(false);
+    display.setTextColor(SH110X_WHITE);
+    display.setTextSize(1);
+
+    // Title bar
+    display.fillRect(0, 0, 128, 11, SH110X_WHITE);
+    display.setTextColor(SH110X_BLACK);
+    display.setCursor(2, 2);
+    display.print("System Info");
+
+    display.setTextColor(SH110X_WHITE);
+
+    // 1. ESP32 Flash Memory
+    uint32_t flashSizeMB = ESP.getFlashChipSize() / (1024 * 1024);
+    uint32_t flashSpeedMHz = ESP.getFlashChipSpeed() / 1000000;
+    uint32_t freeHeapKB = ESP.getFreeHeap() / 1024;
+    uint32_t freeSketchKB = ESP.getFreeSketchSpace() / 1024;
+
+    display.setCursor(2, 13);
+    display.printf("Flash: %uMB (%uMHz)", flashSizeMB, flashSpeedMHz);
+
+    display.setCursor(2, 23);
+    display.printf("RAM  : %uKB Free", freeHeapKB);
+
+    display.setCursor(2, 33);
+    display.printf("App  : %uKB Free", freeSketchKB);
+
+    // 2. SD Card Free Space
+    display.setCursor(2, 44);
+    if (sdCardReady) {
+        uint64_t totalBytes = SD.totalBytes();
+        uint64_t usedBytes = SD.usedBytes();
+        uint64_t freeBytes = (totalBytes > usedBytes) ? (totalBytes - usedBytes) : 0;
+
+        uint32_t totalMB = totalBytes / (1024 * 1024);
+        uint32_t freeMB = freeBytes / (1024 * 1024);
+
+        if (freeMB >= 1024) {
+            display.printf("SD   : %.1fG/%.1fGB", freeMB / 1024.0f, totalMB / 1024.0f);
+        } else {
+            display.printf("SD   : %uM/%uMB", freeMB, totalMB);
+        }
+    } else {
+        display.print("SD   : Not Mounted");
+    }
+
+    display.setCursor(2, 54);
+    display.print("< Back");
+
+    display.display();
+}
+
 void enterSettingsSubmenu() {
     currentState = SETTING_STATE_ROOT;
     settingsMenuIndex = 0;
-    displaySubmenu(display, settingsMenuItems, SETTINGS_MENU_ITEM_COUNT, settingsMenuIndex);
+    displaySettingsMenu(display, settingsMenuIndex);
 }
 
 void handleSettingsMenu() {
@@ -174,11 +231,11 @@ void handleSettingsMenu() {
             if (upPress) {
                 byte prev = settingsMenuIndex;
                 settingsMenuIndex = (settingsMenuIndex + SETTINGS_MENU_ITEM_COUNT - 1) % SETTINGS_MENU_ITEM_COUNT;
-                displaySubmenu(display, settingsMenuItems, SETTINGS_MENU_ITEM_COUNT, settingsMenuIndex, prev);
+                displaySettingsMenu(display, settingsMenuIndex, prev);
             } else if (downPress) {
                 byte prev = settingsMenuIndex;
                 settingsMenuIndex = (settingsMenuIndex + 1) % SETTINGS_MENU_ITEM_COUNT;
-                displaySubmenu(display, settingsMenuItems, SETTINGS_MENU_ITEM_COUNT, settingsMenuIndex, prev);
+                displaySettingsMenu(display, settingsMenuIndex, prev);
             } else if (backClick) {
                 returnToMainMenu();
             } else if (okClick) {
@@ -186,7 +243,10 @@ void handleSettingsMenu() {
                     currentState = SETTING_STATE_INTERFACE;
                     interfaceIndex = 0;
                     displaySubmenu(display, interfaceMenuItems, INTERFACE_MENU_COUNT, interfaceIndex);
-                } else if (settingsMenuIndex == 1) { // Restart
+                } else if (settingsMenuIndex == 1) { // System Info
+                    currentState = SETTING_STATE_SYS_INFO;
+                    renderSystemInfoScreen();
+                } else if (settingsMenuIndex == 2) { // Restart
                     display.clearDisplay();
                     display.setTextColor(SH110X_WHITE);
                     display.setTextSize(1);
@@ -195,7 +255,7 @@ void handleSettingsMenu() {
                     display.display();
                     delay(600);
                     ESP.restart();
-                } else if (settingsMenuIndex == 2) { // Reset
+                } else if (settingsMenuIndex == 3) { // Reset
                     menu = 1;
                     submenu = 1;
                     colorSelectionIndex = 0;
@@ -209,20 +269,10 @@ void handleSettingsMenu() {
                     display.display();
                     delay(800);
                     ESP.restart();
-                } else if (settingsMenuIndex == 3) { // Update
-                    display.clearDisplay();
-                    display.setTextColor(SH110X_WHITE);
-                    display.setTextSize(1);
-                    display.setCursor(16, 20);
-                    display.print("Firmware Update");
-                    display.setCursor(16, 36);
-                    display.print("No SD file found");
-                    display.display();
-                    delay(1200);
-                    displaySubmenu(display, settingsMenuItems, SETTINGS_MENU_ITEM_COUNT, settingsMenuIndex);
                 } else if (settingsMenuIndex == 4) { // About
                     currentState = SETTING_STATE_ABOUT;
                     display.clearDisplay();
+                    display.setTextWrap(false);
                     display.setTextColor(SH110X_WHITE);
                     display.setTextSize(2);
                     display.setCursor(4, 5);
@@ -241,6 +291,14 @@ void handleSettingsMenu() {
             break;
         }
 
+        case SETTING_STATE_SYS_INFO: {
+            if (okClick || backClick || upPress || downPress) {
+                currentState = SETTING_STATE_ROOT;
+                displaySettingsMenu(display, settingsMenuIndex);
+            }
+            break;
+        }
+
         case SETTING_STATE_INTERFACE: {
             if (upPress) {
                 byte prev = interfaceIndex;
@@ -252,7 +310,7 @@ void handleSettingsMenu() {
                 displaySubmenu(display, interfaceMenuItems, INTERFACE_MENU_COUNT, interfaceIndex, prev);
             } else if (backClick) {
                 currentState = SETTING_STATE_ROOT;
-                displaySubmenu(display, settingsMenuItems, SETTINGS_MENU_ITEM_COUNT, settingsMenuIndex);
+                displaySettingsMenu(display, settingsMenuIndex);
             } else if (okClick) {
                 if (interfaceIndex == 0) { // Menu Style
                     currentState = SETTING_STATE_MENU_STYLE;
@@ -272,7 +330,7 @@ void handleSettingsMenu() {
                     displaySubmenu(display, standbyTimeoutLabels, STANDBY_ITEM_COUNT, standbyIndex);
                 } else if (interfaceIndex == 4) { // Back
                     currentState = SETTING_STATE_ROOT;
-                    displaySubmenu(display, settingsMenuItems, SETTINGS_MENU_ITEM_COUNT, settingsMenuIndex);
+                    displaySettingsMenu(display, settingsMenuIndex);
                 }
             }
             break;
@@ -363,7 +421,7 @@ void handleSettingsMenu() {
         case SETTING_STATE_ABOUT: {
             if (okClick || backClick || upPress || downPress) {
                 currentState = SETTING_STATE_ROOT;
-                displaySubmenu(display, settingsMenuItems, SETTINGS_MENU_ITEM_COUNT, settingsMenuIndex);
+                displaySettingsMenu(display, settingsMenuIndex);
             }
             break;
         }

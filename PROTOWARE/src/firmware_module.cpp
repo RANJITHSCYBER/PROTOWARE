@@ -38,9 +38,7 @@ enum FirmwareState : byte {
     FW_STATE_FLASH_LIST,
     FW_STATE_FLASH_CONFIRM,
     FW_STATE_FLASHING,
-    FW_STATE_SYS_INFO,
     FW_STATE_OTA_NOTICE,
-    FW_STATE_REBOOT_CONFIRM,
     FW_STATE_VERSION
 };
 
@@ -375,64 +373,7 @@ static bool performFlashFromSD(const String& filepath) {
 }
 
 // =============================================================================
-// 2. SYSTEM INFO SCREEN
-// =============================================================================
-static void renderSystemInfoScreen() {
-    display.clearDisplay();
-    display.setTextWrap(false);
-    display.setTextColor(SH110X_WHITE);
-    display.setTextSize(1);
-
-    // Title bar
-    display.fillRect(0, 0, 128, 11, SH110X_WHITE);
-    display.setTextColor(SH110X_BLACK);
-    display.setCursor(2, 2);
-    display.print("System Info");
-
-    display.setTextColor(SH110X_WHITE);
-
-    // 1. ESP32 Flash Memory
-    uint32_t flashSizeMB = ESP.getFlashChipSize() / (1024 * 1024);
-    uint32_t flashSpeedMHz = ESP.getFlashChipSpeed() / 1000000;
-    uint32_t freeHeapKB = ESP.getFreeHeap() / 1024;
-    uint32_t freeSketchKB = ESP.getFreeSketchSpace() / 1024;
-
-    display.setCursor(2, 13);
-    display.printf("Flash: %uMB (%uMHz)", flashSizeMB, flashSpeedMHz);
-
-    display.setCursor(2, 23);
-    display.printf("RAM  : %uKB Free", freeHeapKB);
-
-    display.setCursor(2, 33);
-    display.printf("App  : %uKB Free", freeSketchKB);
-
-    // 2. SD Card Free Space
-    display.setCursor(2, 44);
-    if (sdCardReady) {
-        uint64_t totalBytes = SD.totalBytes();
-        uint64_t usedBytes = SD.usedBytes();
-        uint64_t freeBytes = (totalBytes > usedBytes) ? (totalBytes - usedBytes) : 0;
-
-        uint32_t totalMB = totalBytes / (1024 * 1024);
-        uint32_t freeMB = freeBytes / (1024 * 1024);
-
-        if (freeMB >= 1024) {
-            display.printf("SD   : %.1fG/%.1fGB", freeMB / 1024.0f, totalMB / 1024.0f);
-        } else {
-            display.printf("SD   : %uM/%uMB", freeMB, totalMB);
-        }
-    } else {
-        display.print("SD   : Not Mounted");
-    }
-
-    display.setCursor(2, 54);
-    display.print("< Back");
-
-    display.display();
-}
-
-// =============================================================================
-// 3. OTA UPDATE NOTICE SCREEN
+// 2. OTA UPDATE NOTICE SCREEN
 // =============================================================================
 static void renderOtaNoticeScreen() {
     display.clearDisplay();
@@ -457,55 +398,7 @@ static void renderOtaNoticeScreen() {
 }
 
 // =============================================================================
-// 4. REBOOT SCREEN
-// =============================================================================
-static int rebootChoice = 0; // 0: Cancel, 1: Reboot
-
-static void renderRebootModal() {
-    display.clearDisplay();
-    display.setTextWrap(false);
-
-    // Modal frame
-    display.drawRoundRect(10, 8, 108, 48, 3, SH110X_WHITE);
-    display.fillRect(11, 9, 106, 12, SH110X_WHITE);
-
-    display.setTextColor(SH110X_BLACK);
-    display.setTextSize(1);
-    display.setCursor(22, 11);
-    display.print("REBOOT SYSTEM");
-
-    display.setTextColor(SH110X_WHITE);
-    display.setCursor(16, 26);
-    display.print("Restart ESP32 now?");
-
-    // Buttons: [ Cancel ] [ Reboot ]
-    int yBtn = 39;
-
-    if (rebootChoice == 0) {
-        display.fillRect(18, yBtn, 42, 12, SH110X_WHITE);
-        display.setTextColor(SH110X_BLACK);
-    } else {
-        display.drawRoundRect(18, yBtn, 42, 12, 2, SH110X_WHITE);
-        display.setTextColor(SH110X_WHITE);
-    }
-    display.setCursor(22, yBtn + 2);
-    display.print("Cancel");
-
-    if (rebootChoice == 1) {
-        display.fillRect(68, yBtn, 42, 12, SH110X_WHITE);
-        display.setTextColor(SH110X_BLACK);
-    } else {
-        display.drawRoundRect(68, yBtn, 42, 12, 2, SH110X_WHITE);
-        display.setTextColor(SH110X_WHITE);
-    }
-    display.setCursor(72, yBtn + 2);
-    display.print("Reboot");
-
-    display.display();
-}
-
-// =============================================================================
-// 5. VERSION SCREEN
+// 3. VERSION SCREEN
 // =============================================================================
 static void renderVersionScreen() {
     display.clearDisplay();
@@ -592,17 +485,10 @@ void handleFirmwareMenu() {
                     scanSdForBinFiles();
                     currentFwState = FW_STATE_FLASH_LIST;
                     renderBinFileList(binSelectedIdx);
-                } else if (firmwareMenuIndex == 1) { // System Info
-                    currentFwState = FW_STATE_SYS_INFO;
-                    renderSystemInfoScreen();
-                } else if (firmwareMenuIndex == 2) { // OTA Update
+                } else if (firmwareMenuIndex == 1) { // OTA Update
                     currentFwState = FW_STATE_OTA_NOTICE;
                     renderOtaNoticeScreen();
-                } else if (firmwareMenuIndex == 3) { // Reboot
-                    rebootChoice = 0;
-                    currentFwState = FW_STATE_REBOOT_CONFIRM;
-                    renderRebootModal();
-                } else if (firmwareMenuIndex == 4) { // Version
+                } else if (firmwareMenuIndex == 2) { // Version
                     currentFwState = FW_STATE_VERSION;
                     renderVersionScreen();
                 }
@@ -661,18 +547,7 @@ void handleFirmwareMenu() {
         }
 
         // ---------------------------------------------------------------------
-        // 2. SYSTEM INFO
-        // ---------------------------------------------------------------------
-        case FW_STATE_SYS_INFO: {
-            if (backClick || okClick) {
-                currentFwState = FW_STATE_MENU;
-                displayFirmwareMenu(display, firmwareMenuIndex);
-            }
-            break;
-        }
-
-        // ---------------------------------------------------------------------
-        // 3. OTA NOTICE
+        // 2. OTA NOTICE
         // ---------------------------------------------------------------------
         case FW_STATE_OTA_NOTICE: {
             if (backClick || okClick) {
@@ -683,35 +558,7 @@ void handleFirmwareMenu() {
         }
 
         // ---------------------------------------------------------------------
-        // 4. REBOOT MODAL
-        // ---------------------------------------------------------------------
-        case FW_STATE_REBOOT_CONFIRM: {
-            if (clickLeft || clickRight || upPress || downPress) {
-                rebootChoice = (rebootChoice == 0) ? 1 : 0;
-                renderRebootModal();
-            } else if (backClick) {
-                currentFwState = FW_STATE_MENU;
-                displayFirmwareMenu(display, firmwareMenuIndex);
-            } else if (okClick) {
-                if (rebootChoice == 1) {
-                    display.clearDisplay();
-                    display.setTextColor(SH110X_WHITE);
-                    display.setTextSize(1);
-                    display.setCursor(14, 26);
-                    display.print("Rebooting PROTOWARE...");
-                    display.display();
-                    delay(600);
-                    ESP.restart();
-                } else {
-                    currentFwState = FW_STATE_MENU;
-                    displayFirmwareMenu(display, firmwareMenuIndex);
-                }
-            }
-            break;
-        }
-
-        // ---------------------------------------------------------------------
-        // 5. VERSION
+        // 3. VERSION
         // ---------------------------------------------------------------------
         case FW_STATE_VERSION: {
             if (backClick || okClick) {

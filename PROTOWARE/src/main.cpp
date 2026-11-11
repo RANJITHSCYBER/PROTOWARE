@@ -20,6 +20,7 @@
 #include "wifi_module.h"
 #include "bluetooth_module.h"
 #include "firmware_module.h"
+#include "gpio_module.h"
 
 // =============================================================================
 // GLOBAL INTERFACE DEFINITIONS
@@ -136,7 +137,7 @@ void displayCurrentSubmenu(int previousIndex) {
         case 1: enterBluetoothSubmenu(); break;
         case 2: OLED_printSubGHzMenu(display, subghzMenuIndex, previousIndex); break;
         case 3: displayIRMenu(display, irMenuIndex, previousIndex); break;
-        case 4: displayGPIOMenu(display, gpioMenuIndex, previousIndex); break;
+        case 4: enterGPIOSubmenu(); break;
         case 5: displayGamesMenu(display, gamesMenuIndex, previousIndex); break;
         case 6: enterSettingsSubmenu(); break;
         case 7: enterFirmwareSubmenu(); break;
@@ -167,6 +168,10 @@ void handleSubmenuNavigation() {
     }
     if (currentMenu == 1) {
         handleBluetoothMenu();
+        return;
+    }
+    if (currentMenu == 4) {
+        handleGPIOMenu();
         return;
     }
     if (currentMenu == 6) {
@@ -300,11 +305,14 @@ void setup() {
         Serial.println("[STORAGE] SD Card not detected.");
     }
 
-    // 4. Show Boot Logo
+    // 4. Initialize Hardware Submodules
+    initGPIOModule();
+
+    // 5. Show Boot Logo
     OLED_printLogo(display, true);
     delay(600);
 
-    // 5. Initial Menu Display
+    // 6. Initial Menu Display
     resetMainMenuAnimation(currentMenu);
     OLED_printMenu(display, currentMenu);
     Serial.println("[SYSTEM] Ready! Main Menu Running.");
