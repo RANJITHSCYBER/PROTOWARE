@@ -1,0 +1,8 @@
+{
+  "description": "Proto S1 Registered & Authorized Device Registry",
+  "updated_at": "2026-11-17",
+  "authorized_macs": [
+    "FC:E8:C0:7C:96:60",
+    "f0:24:f9:5a:7b:54"
+  ]
+}
